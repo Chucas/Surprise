@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Be My Valentine?</title>
+  <style>
+    :root { --pad: 18px; }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Poppins", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      background: radial-gradient(circle at 20% 20%, #ee4a4a, #f31e1e, #c42be2);
+      color: #fff;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+    }
+
+    /* floating hearts */
+    .hearts {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+    .heart {
+      position: absolute;
+      bottom: -40px;
+      font-size: 20px;
+      opacity: 0.7;
+      animation: floatUp linear infinite;
+      filter: drop-shadow(0 4px 6px rgba(0,0,0,.15));
+    }
+    @keyframes floatUp {
+      to {
+        transform: translateY(-110vh) rotate(25deg);
+        opacity: 0;
+      }
+    }
+
+    .card {
+      width: min(720px, calc(100vw - 32px));
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.35);
+      backdrop-filter: blur(8px);
+      border-radius: 22px;
+      padding: 26px;
+      box-shadow: 0 16px 35px rgba(0,0,0,0.25);
+      position: relative;
+      z-index: 1;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      text-align: center;
+      font-size: clamp(1.6rem, 3vw, 2.2rem);
+      text-shadow: 0 3px 10px rgba(0,0,0,.2);
+    }
+
+    .sub {
+      margin: 0 0 18px;
+      text-align: center;
+      opacity: .95;
+      font-size: 1rem;
+    }
+
+    .stage {
+      position: relative;
+      height: 320px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.18);
+      border: 1px dashed rgba(255,255,255,.5);
+      overflow: hidden;
+    }
+
+    .btn {
+      border: 0;
+      border-radius: 999px;
+      padding: 12px 22px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      user-select: none;
+      touch-action: manipulation;
+      box-shadow: 0 10px 18px rgba(0,0,0,0.2);
+      transition: transform .12s ease;
+    }
+    .btn:active { transform: scale(.97); }
+
+    #yesBtn {
+      background: #fff;
+      color: #d21f1f;
+      position: absolute;
+      left: var(--pad);
+      bottom: var(--pad);
+    }
+
+    #noBtn {
+      background: #d81b1b;
+      color: #fff;
+      position: absolute;
+      left: 135px;
+      bottom: var(--pad);
+    }
+
+    .status {
+      margin-top: 12px;
+      text-align: center;
+      min-height: 1.2em;
+      font-size: 14px;
+      opacity: .95;
+    }
+  </style>
+</head>
+<body>
+  <div class="hearts" aria-hidden="true" id="hearts"></div>
+
+  <div class="card">
+    <h1>Will you be my Valentine? 💘</h1>
+
+    <div class="stage" id="stage" aria-label="button area">
+      <button class="btn" id="yesBtn">Yes</button>
+      <button class="btn" id="noBtn">No</button>
+    </div>
+
+    <div class="status" id="status"></div>
+  </div>
+
+  <script>
+    const stage = document.getElementById("stage");
+    const noBtn = document.getElementById("noBtn");
+    const yesBtn = document.getElementById("yesBtn");
+    const status = document.getElementById("status");
+    const hearts = document.getElementById("hearts");
+
+    // Decorative floating hearts
+    for (let i = 0; i < 22; i++) {
+      const span = document.createElement("span");
+      span.className = "heart";
+      span.textContent = Math.random() > 0.3 ? "💗" : "💖";
+      span.style.left = Math.random() * 100 + "vw";
+      span.style.animationDuration = (6 + Math.random() * 8) + "s";
+      span.style.animationDelay = (Math.random() * 8) + "s";
+      span.style.fontSize = (14 + Math.random() * 24) + "px";
+      hearts.appendChild(span);
+    }
+
+    function clamp(v, min, max) {
+      return Math.max(min, Math.min(max, v));
+    }
+
+    function pointerToStageCoords(evt) {
+      const rect = stage.getBoundingClientRect();
+      const clientX = evt.touches?.[0]?.clientX ?? evt.clientX;
+      const clientY = evt.touches?.[0]?.clientY ?? evt.clientY;
+      return { x: clientX - rect.left, y: clientY - rect.top };
+    }
+
+    function moveNoButton(avoidX, avoidY) {
+      const stageRect = stage.getBoundingClientRect();
+      const btnRect = noBtn.getBoundingClientRect();
+      const padding = 10;
+
+      const minX = padding;
+      const minY = padding;
+      const maxX = stageRect.width - btnRect.width - padding;
+      const maxY = stageRect.height - btnRect.height - padding;
+
+      let best = null;
+      for (let i = 0; i < 20; i++) {
+        const x = Math.random() * (maxX - minX) + minX;
+        const y = Math.random() * (maxY - minY) + minY;
+        const dx = (x + btnRect.width / 2) - avoidX;
+        const dy = (y + btnRect.height / 2) - avoidY;
+        const dist2 = dx * dx + dy * dy;
+        if (!best || dist2 > best.dist2) best = { x, y, dist2 };
+      }
+
+      noBtn.style.left = `${clamp(best.x, minX, maxX)}px`;
+      noBtn.style.top = `${clamp(best.y, minY, maxY)}px`;
+      noBtn.style.bottom = "auto";
+    }
+
+    function flee(evt) {
+      const { x, y } = pointerToStageCoords(evt);
+      moveNoButton(x, y);
+    }
+
+    noBtn.addEventListener("mouseenter", flee);
+    noBtn.addEventListener("mousemove", flee);
+    noBtn.addEventListener("mousedown", flee);
+    noBtn.addEventListener("touchstart", (e) => {
+      e.preventDefault();
+      flee(e);
+    }, { passive: false });
+
+    noBtn.addEventListener("focus", () => {
+      const rect = stage.getBoundingClientRect();
+      moveNoButton(rect.width / 2, rect.height / 2);
+      yesBtn.focus();
+    });
+
+    yesBtn.addEventListener("click", () => {
+      // Opens sure.html in the same tab (more reliable than window.open)
+      window.location.href = "sure.html";
+    });
+
+    window.addEventListener("load", () => {
+      noBtn.style.top = "auto";
+    });
+  </script>
+</body>
+</html>
